@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require("body-parser");
 const axios = require("axios");
 
+
 const app = express();
 
 app.use(function (req, res, next) {
@@ -26,8 +27,35 @@ app.use(bodyParser.json());
 
 app.enable('trust proxy');
 
-app.post('/api/fetchStockData', (req, res) => {
+app.post('/api/fetchStockData', async (req, res) => {
     // YOUR CODE GOES HERE, PLEASE DO NOT EDIT ANYTHING OUTSIDE THIS FUNCTION
+
+    const { symbol, date } = req.body;
+
+    try {
+        // Fetch data from Polygon API
+        const response = await axios.get(`https://api.polygon.io/v1/open-close/${symbol}/${date}?apiKey=${POLYGON_API_KEY}`);
+        const data = response.data;
+
+        // Check if data contains valid values
+        if (!data || data.status === 'NOT_FOUND') {
+            return res.status(404).json({ error: 'Data not found for the given stock and date.' });
+        }
+
+        // Extract required details (Open, High, Low, Close, Volume) from the response
+        const stockDetails = {
+            Open: data.open,
+            High: data.high,
+            Low: data.low,
+            Close: data.close,
+            Volume: data.volume
+        };
+
+        res.json(stockDetails);
+    } catch (error) {
+        console.error('Error fetching stock data:', error.message);
+        res.status(500).json({ error: 'Failed to fetch stock data' });
+    }
     res.sendStatus(200);
 });
 
